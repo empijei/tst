@@ -84,15 +84,6 @@ func TestDo(t *testing.T) {
 			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
 		}
 	})
-	t.Run("not ok with msg", func(t *testing.T) {
-		st := newStub(t)
-		f := func() (int, error) { return 0, errors.New("argh") }
-		tst.Do(f())(st, "foo %v", 3)
-		want := call{fatal, `❌ Do: foo 3: got unexpected error: "argh".`}
-		if got := st.pop(); got != want {
-			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
-		}
-	})
 }
 
 func TestDo2(t *testing.T) {
@@ -114,35 +105,18 @@ func TestDo2(t *testing.T) {
 			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
 		}
 	})
-	t.Run("not ok with msg", func(t *testing.T) {
-		st := newStub(t)
-		f := func() (int, int, error) { return 0, 0, errors.New("argh") }
-		tst.Do2(f())(st, "foo %v", 3)
-		want := call{fatal, `❌ Do2: foo 3: got unexpected error: "argh".`}
-		if got := st.pop(); got != want {
-			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
-		}
-	})
 }
 
 func TestNo(t *testing.T) {
 	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
 		st := newStub(t)
-		tst.No(nil)(st)
+		tst.No(nil, st)
 	})
 	t.Run("not ok", func(t *testing.T) {
 		st := newStub(t)
-		tst.No(errors.New("argh"))(st)
+		tst.No(errors.New("argh"), st)
 		want := call{fatal, `❌ No: got unexpected error: "argh".`}
-		if got := st.pop(); got != want {
-			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
-		}
-	})
-	t.Run("not ok with msg", func(t *testing.T) {
-		st := newStub(t)
-		tst.No(errors.New("argh"))(st, "foo %v", 3)
-		want := call{fatal, `❌ No: foo 3: got unexpected error: "argh".`}
 		if got := st.pop(); got != want {
 			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
 		}
@@ -153,11 +127,11 @@ func TestErr(t *testing.T) {
 	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
 		st := newStub(t)
-		tst.Err("argh", errors.New("something argh happened"))(st)
+		tst.Err("argh", errors.New("something argh happened"), st)
 	})
 	t.Run("nil error", func(t *testing.T) {
 		st := newStub(t)
-		tst.Err("argh", nil)(st)
+		tst.Err("argh", nil, st)
 		want := call{fatal, `❌ Err: expected error, got <nil>`}
 		if got := st.pop(); got != want {
 			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
@@ -165,16 +139,8 @@ func TestErr(t *testing.T) {
 	})
 	t.Run("mismatch", func(t *testing.T) {
 		st := newStub(t)
-		tst.Err("foo", errors.New("argh"))(st)
+		tst.Err("foo", errors.New("argh"), st)
 		want := call{errr, `⚠️ Err: want error message to contain "foo", got "argh"`}
-		if got := st.pop(); got != want {
-			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
-		}
-	})
-	t.Run("mismatch with msg", func(t *testing.T) {
-		st := newStub(t)
-		tst.Err("foo", errors.New("argh"))(st, "bar %v", 3)
-		want := call{errr, `⚠️ Err: bar 3: want error message to contain "foo", got "argh"`}
 		if got := st.pop(); got != want {
 			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
 		}
@@ -185,29 +151,14 @@ func TestIs(t *testing.T) {
 	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
 		st := newStub(t)
-		tst.Is(1, 1)(st)
+		tst.Is(1, 1, st)
 	})
 	t.Run("mismatch", func(t *testing.T) {
 		st := newStub(t)
-		tst.Is(1, 2)(st)
+		tst.Is(1, 2, st)
 		got := st.pop()
 		if got.typ != errr {
 			t.Errorf("want err, got %v", got.typ)
-		}
-	})
-	t.Run("mismatch with msg", func(t *testing.T) {
-		st := newStub(t)
-		tst.Is(1, 2)(st, "foo %v", 3)
-		if len(st.calls) != 1 {
-			t.Fatalf("want 1 call, got %d", len(st.calls))
-		}
-		got := st.pop()
-		if got.typ != errr {
-			t.Errorf("want error, got %v", got.typ)
-		}
-		const want = "⚠️ Is: foo 3: "
-		if got.msg[:len(want)] != want {
-			t.Errorf("msg:\nwant prefix %q\ngot\n%q", want, got)
 		}
 	})
 }
