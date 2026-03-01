@@ -5,6 +5,7 @@
 package tst
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -24,7 +25,7 @@ var (
 	_ Test = &testing.B{}
 )
 
-// Test is a test case.
+// Test is an abstraction over *testing.(T|B|F).
 type Test interface {
 	Helper()
 	Fatalf(string, ...any)
@@ -98,4 +99,19 @@ func Err(errorSubMessage string, err error, t Test) {
 		return
 	}
 	t.Errorf(errorEmoji+"Err: want error message to contain %q, got %q", errorSubMessage, err.Error())
+}
+
+// PTest is an abstraction over [*testing.T].
+type PTest interface {
+	Test
+	Context() context.Context
+	Parallel()
+}
+
+var _ PTest = &testing.T{}
+
+// Go is a shorthand for t.Parallel(); t.Context().
+func Go(t PTest) context.Context {
+	t.Helper()
+	return t.Context()
 }
