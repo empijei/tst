@@ -34,6 +34,18 @@ type Test interface {
 	Cleanup(func())
 }
 
+// DoB unwraps a result and stops the test if ok is false.
+func DoB[V any](v V, ok bool) func(t Test) V {
+	return func(t Test) V {
+		t.Helper()
+
+		if !ok {
+			t.Fatalf(fatalEmoji + "DoB: got ok==false")
+		}
+		return v
+	}
+}
+
 // Do unwraps a result and stops the test if an error occurred.
 func Do[V any](v V, err error) func(t Test) V {
 	return func(t Test) V {
