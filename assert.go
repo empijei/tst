@@ -5,7 +5,6 @@
 package tst
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -29,6 +28,7 @@ var (
 // with different testing types.
 type Test interface {
 	Helper()
+	Name() string
 	Fatalf(string, ...any)
 	Errorf(string, ...any)
 	Failed() bool
@@ -109,20 +109,6 @@ func No(err error, t Test) {
 	}
 }
 
-// Ko stops the test immediately (t.Fatalf) if the test has already failed.
-// This is useful to prevent cascading errors if a previous check failed.
-//
-// Example:
-//
-//	tst.Is(want, got, t)
-//	tst.Ko(t) // Stop here if Is failed.
-func Ko(t Test) {
-	t.Helper()
-	if t.Failed() {
-		t.Fatalf(stopEmoji + "Ko: Test aborted due to previous failures.")
-	}
-}
-
 // Is checks that want matches got via [cmp.Diff] using the options provided.
 // It calls t.Errorf if there's a mismatch.
 // Errors are compared with [cmpopts.EquateErrors] by default.
@@ -160,24 +146,4 @@ func Err(errorSubMessage string, err error, t Test) {
 		return
 	}
 	t.Errorf(errorEmoji+"Err: want error message to contain %q, got %q", errorSubMessage, err.Error())
-}
-
-// PTest is an abstraction over [*testing.T] that includes Parallel and Context.
-type PTest interface {
-	Test
-	Context() context.Context
-	Parallel()
-}
-
-var _ PTest = &testing.T{}
-
-// Go is a shorthand for t.Parallel() and returns the test context.
-//
-// Example:
-//
-//	ctx := tst.Go(t)
-func Go(t PTest) context.Context {
-	t.Helper()
-	t.Parallel()
-	return t.Context()
 }

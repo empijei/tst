@@ -39,6 +39,10 @@ func newStub(t *testing.T) *stubTest {
 	return s
 }
 
+func (*stubTest) Name() string {
+	return "StubTest"
+}
+
 func (t *stubTest) Helper() {
 	t.helperCalled++
 }
