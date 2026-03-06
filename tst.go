@@ -1,7 +1,7 @@
-// Package tst is a simple package to write lean and readable tests that has a very
-// low learning curve.
-//
-// THIS API IS CLUNKY: we need to wait for generic methods to properly do this.
+// Package tst provides a collection of small, focused helpers designed to make Go
+// tests leaner and more readable. It aims for a minimal learning curve by
+// providing intuitive functions for common testing patterns like error handling,
+// value unwrapping, and deep equality checks.
 package tst
 
 import (
@@ -25,7 +25,8 @@ var (
 	_ Test = &testing.B{}
 )
 
-// Test is an abstraction over *testing.(T|B|F).
+// Test is an abstraction over *testing.(T|B|F). It allows tst helpers to work
+// with different testing types.
 type Test interface {
 	Helper()
 	Fatalf(string, ...any)
@@ -34,7 +35,11 @@ type Test interface {
 	Cleanup(func())
 }
 
-// DoB unwraps a result and stops the test if ok is false.
+// DoB unwraps a result and stops the test immediately (t.Fatalf) if ok is false.
+//
+// Example:
+//
+//	val := tst.DoB(syncMap.Load("foo"))(t)
 func DoB[V any](v V, ok bool) func(t Test) V {
 	return func(t Test) V {
 		t.Helper()
@@ -46,7 +51,11 @@ func DoB[V any](v V, ok bool) func(t Test) V {
 	}
 }
 
-// Be stops the test if ok is false.
+// Be stops the test immediately (t.Fatalf) if ok is false.
+//
+// Example:
+//
+//	tst.Be(len(list) > 0, t)
 func Be(ok bool, t Test) {
 	t.Helper()
 	if !ok {
@@ -54,7 +63,13 @@ func Be(ok bool, t Test) {
 	}
 }
 
-// Do unwraps a result and stops the test if an error occurred.
+// Do unwraps a result and stops the test immediately (t.Fatalf) if an error
+// occurred.
+//
+// Example:
+//
+//	f := tst.Do(os.Open("file.txt"))(t)
+//	defer f.Close()
 func Do[V any](v V, err error) func(t Test) V {
 	return func(t Test) V {
 		t.Helper()
@@ -66,7 +81,11 @@ func Do[V any](v V, err error) func(t Test) V {
 	}
 }
 
-// Do2 is like [Do], but for functions that return 2 values and an error.
+// Do2 is like [Do], but for functions that return two values and an error.
+//
+// Example:
+//
+//	v1, v2 := tst.Do2(returnsTwoValuesAndError())(t)
 func Do2[V1, V2 any](v1 V1, v2 V2, err error) func(t Test) (V1, V2) {
 	return func(t Test) (V1, V2) {
 		t.Helper()
@@ -78,7 +97,11 @@ func Do2[V1, V2 any](v1 V1, v2 V2, err error) func(t Test) (V1, V2) {
 	}
 }
 
-// No stops the test if an error occurred.
+// No stops the test immediately (t.Fatalf) if the provided error is not nil.
+//
+// Example:
+//
+//	tst.No(err, t)
 func No(err error, t Test) {
 	t.Helper()
 	if err != nil {
@@ -86,7 +109,13 @@ func No(err error, t Test) {
 	}
 }
 
-// Ko stops the test if it has already failed.
+// Ko stops the test immediately (t.Fatalf) if the test has already failed.
+// This is useful to prevent cascading errors if a previous check failed.
+//
+// Example:
+//
+//	tst.Is(want, got, t)
+//	tst.Ko(t) // Stop here if Is failed.
 func Ko(t Test) {
 	t.Helper()
 	if t.Failed() {
@@ -95,9 +124,14 @@ func Ko(t Test) {
 }
 
 // Is checks that want matches got via [cmp.Diff] using the options provided.
-// Errors are compared with [errors.Is] by default.
+// It calls t.Errorf if there's a mismatch.
+// Errors are compared with [cmpopts.EquateErrors] by default.
 //
-// Options can be found both in [cmp] and [cmpopts].
+// Options can be found in both [cmp] and [cmpopts] packages.
+//
+// Example:
+//
+//	tst.Is(want, got, t)
 func Is[T any](want, got T, t Test, opts ...cmp.Option) {
 	t.Helper()
 	opts = append(opts, cmpopts.EquateErrors())
@@ -109,6 +143,13 @@ func Is[T any](want, got T, t Test, opts ...cmp.Option) {
 }
 
 // Err checks if the provided error is not nil and contains an optional message.
+//
+// It calls t.Fatalf if err is nil, and t.Errorf if the message doesn't match.
+// If no message is passed, it just checks that an error occurred.
+//
+// Example:
+//
+//	tst.Err("permission denied", err, t)
 func Err(errorSubMessage string, err error, t Test) {
 	t.Helper()
 	if err == nil {
@@ -121,7 +162,7 @@ func Err(errorSubMessage string, err error, t Test) {
 	t.Errorf(errorEmoji+"Err: want error message to contain %q, got %q", errorSubMessage, err.Error())
 }
 
-// PTest is an abstraction over [*testing.T].
+// PTest is an abstraction over [*testing.T] that includes Parallel and Context.
 type PTest interface {
 	Test
 	Context() context.Context
@@ -130,8 +171,13 @@ type PTest interface {
 
 var _ PTest = &testing.T{}
 
-// Go is a shorthand for t.Parallel(); t.Context().
+// Go is a shorthand for t.Parallel() and returns the test context.
+//
+// Example:
+//
+//	ctx := tst.Go(t)
 func Go(t PTest) context.Context {
 	t.Helper()
+	t.Parallel()
 	return t.Context()
 }
