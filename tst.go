@@ -46,6 +46,14 @@ func DoB[V any](v V, ok bool) func(t Test) V {
 	}
 }
 
+// Be stops the test if ok is false.
+func Be(ok bool, t Test) {
+	t.Helper()
+	if !ok {
+		t.Fatalf(fatalEmoji + "Be: !ok")
+	}
+}
+
 // Do unwraps a result and stops the test if an error occurred.
 func Do[V any](v V, err error) func(t Test) V {
 	return func(t Test) V {
