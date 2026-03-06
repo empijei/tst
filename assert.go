@@ -128,6 +128,15 @@ func Is[T any](want, got T, t Test, opts ...cmp.Option) {
 	t.Errorf(errorEmoji+"Is: mismatch:\n\nwant:\n%#v\n\ngot:\n%#v\n\ndiff:\n%s\n", want, got, diff)
 }
 
+// IsSubString is a specialized version of Is to check that want is a substring of got.
+func IsSubString(want, got string, t Test) {
+	t.Helper()
+	if strings.Contains(got, want) {
+		return
+	}
+	t.Errorf(errorEmoji+"IsSubString: wanted %q to be substring of %q", want, got)
+}
+
 // Err checks if the provided error is not nil and contains an optional message.
 //
 // It calls t.Fatalf if err is nil, and t.Errorf if the message doesn't match.

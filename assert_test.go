@@ -167,6 +167,57 @@ func TestIs(t *testing.T) {
 	})
 }
 
+func TestBe(t *testing.T) {
+	t.Parallel()
+	t.Run("ok", func(t *testing.T) {
+		st := newStub(t)
+		tst.Be(true, st)
+	})
+	t.Run("not ok", func(t *testing.T) {
+		st := newStub(t)
+		tst.Be(false, st)
+		want := call{fatal, "❌ Be: !ok"}
+		if got := st.pop(); got != want {
+			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
+		}
+	})
+}
+
+func TestDoB(t *testing.T) {
+	t.Parallel()
+	t.Run("ok", func(t *testing.T) {
+		st := newStub(t)
+		v := tst.DoB(1, true)(st)
+		if v != 1 {
+			t.Fatalf("bad value forwarded: want 1 got %v", v)
+		}
+	})
+	t.Run("not ok", func(t *testing.T) {
+		st := newStub(t)
+		tst.DoB(1, false)(st)
+		want := call{fatal, "❌ DoB: got ok==false"}
+		if got := st.pop(); got != want {
+			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
+		}
+	})
+}
+
+func TestIsSubString(t *testing.T) {
+	t.Parallel()
+	t.Run("ok", func(t *testing.T) {
+		st := newStub(t)
+		tst.IsSubString("foo", "foobar", st)
+	})
+	t.Run("mismatch", func(t *testing.T) {
+		st := newStub(t)
+		tst.IsSubString("baz", "foobar", st)
+		want := call{errr, `⚠️ IsSubString: wanted "baz" to be substring of "foobar"`}
+		if got := st.pop(); got != want {
+			t.Errorf("\nwant\n%#v\ngot\n%#v", got, want)
+		}
+	})
+}
+
 func TestKo(t *testing.T) {
 	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
