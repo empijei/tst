@@ -47,10 +47,10 @@ var _ PTest = &testing.T{}
 //
 // Example:
 //
-//	u := tst.Go(tst.Sync(t))
+//	a := tst.Go(tst.Sync(t))
 func Sync(pt PTest) (t Test) { return t }
 
-type Unit struct {
+type Assertions struct {
 	t Test
 }
 
@@ -58,25 +58,25 @@ type Unit struct {
 //
 // Example:
 //
-//	u := tst.Go(t)
-//	u.Is("42", "42")
-func Go(t Test) *Unit {
+//	a := tst.Go(t)
+//	a.Is("42", "42")
+func Go(t Test) *Assertions {
 	t.Helper()
 	if pt, ok := t.(PTest); ok {
 		pt.Parallel()
 	}
-	return &Unit{t}
+	return &Assertions{t}
 }
 
 // DoB unwraps a result and stops the test immediately (t.Fatalf) if ok is false.
 //
 // Example:
 //
-//	val := u.DoB(syncMap.Load("foo"))
-func (u *Unit) DoB[V any](v V, ok bool) V {
-	u.t.Helper()
+//	val := a.DoB(syncMap.Load("foo"))
+func (a *Assertions) DoB[V any](v V, ok bool) V {
+	a.t.Helper()
 	if !ok {
-		u.t.Fatalf(fatalEmoji + "DoB: got ok==false")
+		a.t.Fatalf(fatalEmoji + "DoB: got ok==false")
 	}
 	return v
 }
@@ -85,11 +85,11 @@ func (u *Unit) DoB[V any](v V, ok bool) V {
 //
 // Example:
 //
-//	u.Be(len(list) > 0)
-func (u *Unit) Be(ok bool) {
-	u.t.Helper()
+//	a.Be(len(list) > 0)
+func (a *Assertions) Be(ok bool) {
+	a.t.Helper()
 	if !ok {
-		u.t.Fatalf(fatalEmoji + "Be: !ok")
+		a.t.Fatalf(fatalEmoji + "Be: !ok")
 	}
 }
 
@@ -98,12 +98,12 @@ func (u *Unit) Be(ok bool) {
 //
 // Example:
 //
-//	f := u.Do(os.Open("file.txt"))
+//	f := a.Do(os.Open("file.txt"))
 //	defer f.Close()
-func (u *Unit) Do[V any](v V, err error) V {
-	u.t.Helper()
+func (a *Assertions) Do[V any](v V, err error) V {
+	a.t.Helper()
 	if err != nil {
-		u.t.Fatalf(fatalEmoji+"Do: got unexpected error: %q.", err)
+		a.t.Fatalf(fatalEmoji+"Do: got unexpected error: %q.", err)
 	}
 	return v
 }
@@ -112,11 +112,11 @@ func (u *Unit) Do[V any](v V, err error) V {
 //
 // Example:
 //
-//	v1, v2 := u.Do2(returnsTwoValuesAndError())
-func (u *Unit) Do2[V1, V2 any](v1 V1, v2 V2, err error) (V1, V2) {
-	u.t.Helper()
+//	v1, v2 := a.Do2(returnsTwoValuesAndError())
+func (a *Assertions) Do2[V1, V2 any](v1 V1, v2 V2, err error) (V1, V2) {
+	a.t.Helper()
 	if err != nil {
-		u.t.Fatalf(fatalEmoji+"Do2: got unexpected error: %q.", err)
+		a.t.Fatalf(fatalEmoji+"Do2: got unexpected error: %q.", err)
 	}
 	return v1, v2
 }
@@ -125,11 +125,11 @@ func (u *Unit) Do2[V1, V2 any](v1 V1, v2 V2, err error) (V1, V2) {
 //
 // Example:
 //
-//	u.No(err)
-func (u *Unit) No(err error) {
-	u.t.Helper()
+//	a.No(err)
+func (a *Assertions) No(err error) {
+	a.t.Helper()
 	if err != nil {
-		u.t.Fatalf(fatalEmoji+"No: got unexpected error: %q.", err)
+		a.t.Fatalf(fatalEmoji+"No: got unexpected error: %q.", err)
 	}
 }
 
@@ -141,24 +141,24 @@ func (u *Unit) No(err error) {
 //
 // Example:
 //
-//	u.Is(want, got, t)
-func (u *Unit) Is[T any](want, got T, opts ...cmp.Option) {
-	u.t.Helper()
+//	a.Is(want, got, t)
+func (a *Assertions) Is[T any](want, got T, opts ...cmp.Option) {
+	a.t.Helper()
 	opts = append(opts, cmpopts.EquateErrors())
 	diff := cmp.Diff(want, got, opts...)
 	if diff == "" {
 		return
 	}
-	u.t.Errorf(errorEmoji+"Is: mismatch:\n\nwant:\n%#v\n\ngot:\n%#v\n\ndiff:\n%s\n", want, got, diff)
+	a.t.Errorf(errorEmoji+"Is: mismatch:\n\nwant:\n%#v\n\ngot:\n%#v\n\ndiff:\n%s\n", want, got, diff)
 }
 
 // IsSubString is a specialized version of Is to check that want is a substring of got.
-func (u *Unit) IsSubString(want, got string) {
-	u.t.Helper()
+func (a *Assertions) IsSubString(want, got string) {
+	a.t.Helper()
 	if strings.Contains(got, want) {
 		return
 	}
-	u.t.Errorf(errorEmoji+"IsSubString: wanted %q to be substring of %q", want, got)
+	a.t.Errorf(errorEmoji+"IsSubString: wanted %q to be substring of %q", want, got)
 }
 
 // Err checks if the provided error is not nil and contains an optional message.
@@ -168,17 +168,17 @@ func (u *Unit) IsSubString(want, got string) {
 //
 // Example:
 //
-//	u.Err("permission denied", err)
-func (u *Unit) Err(errorSubMessage string, err error) {
-	u.t.Helper()
+//	a.Err("permission denied", err)
+func (a *Assertions) Err(errorSubMessage string, err error) {
+	a.t.Helper()
 	if err == nil {
-		u.t.Fatalf(fatalEmoji+"Err: expected error, got %v", err)
+		a.t.Fatalf(fatalEmoji+"Err: expected error, got %v", err)
 		return
 	}
 	if strings.Contains(err.Error(), errorSubMessage) {
 		return
 	}
-	u.t.Errorf(errorEmoji+"Err: want error message to contain %q, got %q", errorSubMessage, err.Error())
+	a.t.Errorf(errorEmoji+"Err: want error message to contain %q, got %q", errorSubMessage, err.Error())
 }
 
 // Ko stops the test immediately (t.Fatalf) if the test has already failed.
@@ -186,11 +186,11 @@ func (u *Unit) Err(errorSubMessage string, err error) {
 //
 // Example:
 //
-//	u.Is(want, got)
-//	u.Ko(t) // Stop here if Is failed.
-func (u *Unit) Ko() {
-	u.t.Helper()
-	if u.t.Failed() {
-		u.t.Fatalf(stopEmoji + "Ko: Test aborted due to previous failures.")
+//	a.Is(want, got)
+//	a.Ko(t) // Stop here if Is failed.
+func (a *Assertions) Ko() {
+	a.t.Helper()
+	if a.t.Failed() {
+		a.t.Fatalf(stopEmoji + "Ko: Test aborted due to previous failures.")
 	}
 }

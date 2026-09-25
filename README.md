@@ -34,19 +34,19 @@ defer f.Close()
 Use:
 
 ```go
-u := tst.Go(t)
-f := u.Do(os.Open("config.json"))
+a := tst.Go(t)
+f := a.Do(os.Open("config.json"))
 defer f.Close()
 ```
 
 ### Deep Equality with `Is`
 
-`(*Unit).Is` uses `go-cmp` to provide detailed diffs when values don't match.
+`(*Assertions).Is` uses `go-cmp` to provide detailed diffs when values don't match.
 
 ```go
 want := &User{Name: "Alice", Age: 30}
 got := FetchUser(1)
-u.Is(want, got)
+a.Is(want, got)
 ```
 
 ### Asserting Errors with `Err`
@@ -55,7 +55,7 @@ Verify that an error is not nil and optionally contains a specific substring.
 
 ```go
 _, err := ProcessData(invalidInput)
-u.Err("invalid input", err, t)
+a.Err("invalid input", err, t)
 ```
 
 ### Stopping Tests Early with `Ko`
@@ -63,22 +63,22 @@ u.Err("invalid input", err, t)
 Prevent a flood of error messages by stopping the test if a previous assertion failed.
 
 ```go
-u := tst.Go(t)
-u.Is(expectedHeader, actualHeader, t)
-u.Ko(t) // Stop here if header check failed, as subsequent tests might be meaningless.
+a := tst.Go(t)
+a.Is(expectedHeader, actualHeader, t)
+a.Ko(t) // Stop here if header check failed, as subsequent tests might be meaningless.
 
-u.Is(expectedBody, actualBody, t)
+a.Is(expectedBody, actualBody, t)
 ```
 
 ### Parallel Tests
 
-`Go` is a shorthand for `t.Parallel()` that also returns the assertions unit.
+`Go` is a shorthand for `t.Parallel()` that also returns the assertions set.
 
 ```go
 func TestSomething(t *testing.T) {
     // Defaults to calling t.Parallel()
-    u := tst.Go(t)
-    // Run your assertions with u.[...]
+    a := tst.Go(t)
+    // Run your assertions with a.[...]
 }
 ```
 
@@ -87,7 +87,7 @@ But tst can be used synchronously by calling `Sync`.
 ```go
 func TestSomething(t *testing.T) {
     // This doesn't call t.Parallel()
-    u := tst.Go(Sync(t))
-    // Run your assertions with u.[...]
+    a := tst.Go(Sync(t))
+    // Run your assertions with a.[...]
 }
 ```
