@@ -35,21 +35,6 @@ type Test interface {
 	Cleanup(func())
 }
 
-// PTest is an abstraction over [*testing.T] that includes Parallel and Context.
-type PTest interface {
-	Test
-	Parallel()
-}
-
-var _ PTest = &testing.T{}
-
-// Sync allows to call Go without triggering a parallel execution.
-//
-// Example:
-//
-//	a := tst.Go(tst.Sync(t))
-func Sync(pt PTest) (t Test) { return t }
-
 type Assertions struct {
 	t Test
 }
@@ -62,11 +47,14 @@ type Assertions struct {
 //	a.Is("42", "42")
 func Go(t Test) *Assertions {
 	t.Helper()
-	if pt, ok := t.(PTest); ok {
+	if pt, ok := t.(interface{ Parallel() }); ok {
 		pt.Parallel()
 	}
 	return &Assertions{t}
 }
+
+// Sync is like Go, but doesn't call Parallel().
+func Sync(t Test) *Assertions { return &Assertions{t} }
 
 // DoB unwraps a result and stops the test immediately (t.Fatalf) if ok is false.
 //

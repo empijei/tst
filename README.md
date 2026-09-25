@@ -87,7 +87,7 @@ But tst can be used synchronously by calling `Sync`.
 ```go
 func TestSomething(t *testing.T) {
     // This doesn't call t.Parallel()
-    a := tst.Go(Sync(t))
+    a := tst.Sync(t)
     // Run your assertions with a.[...]
 }
 ```
