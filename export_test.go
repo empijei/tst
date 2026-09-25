@@ -1,6 +1,6 @@
 package tst
 
-func WithGoldDir(t Test, path string) {
+func (u *Unit) WithGoldDir(t Test, path string) {
 	t.Helper()
-	With(&goldDir, path, t)
+	u.With(&goldDir, path)
 }
