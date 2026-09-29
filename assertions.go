@@ -6,6 +6,7 @@ package tst
 
 import (
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -36,7 +37,8 @@ type Test interface {
 }
 
 type Assertions struct {
-	t Test
+	t    Test
+	used atomic.Bool
 }
 
 // Go is a shorthand for t.Parallel() and returns the unit to use assertions.
@@ -50,11 +52,27 @@ func Go(t Test) *Assertions {
 	if pt, ok := t.(interface{ Parallel() }); ok {
 		pt.Parallel()
 	}
-	return &Assertions{t}
+	a := &Assertions{t: t}
+	t.Cleanup(func() {
+		t.Helper()
+		if !a.used.Load() {
+			t.Fatalf(fatalEmoji + "Assertion was created but not used.")
+		}
+	})
+	return a
 }
 
 // Sync is like Go, but doesn't call Parallel().
-func Sync(t Test) *Assertions { return &Assertions{t} }
+func Sync(t Test) *Assertions {
+	a := &Assertions{t: t}
+	t.Cleanup(func() {
+		t.Helper()
+		if !a.used.Load() {
+			t.Fatalf(fatalEmoji + "Assertion was created but not used.")
+		}
+	})
+	return a
+}
 
 // DoB unwraps a result and stops the test immediately (t.Fatalf) if ok is false.
 //
@@ -63,6 +81,7 @@ func Sync(t Test) *Assertions { return &Assertions{t} }
 //	val := a.DoB(syncMap.Load("foo"))
 func (a *Assertions) DoB[V any](v V, ok bool) V {
 	a.t.Helper()
+	a.used.Store(true)
 	if !ok {
 		a.t.Fatalf(fatalEmoji + "DoB: got ok==false")
 	}
@@ -76,6 +95,7 @@ func (a *Assertions) DoB[V any](v V, ok bool) V {
 //	a.Be(len(list) > 0)
 func (a *Assertions) Be(ok bool) {
 	a.t.Helper()
+	a.used.Store(true)
 	if !ok {
 		a.t.Fatalf(fatalEmoji + "Be: !ok")
 	}
@@ -90,6 +110,7 @@ func (a *Assertions) Be(ok bool) {
 //	defer f.Close()
 func (a *Assertions) Do[V any](v V, err error) V {
 	a.t.Helper()
+	a.used.Store(true)
 	if err != nil {
 		a.t.Fatalf(fatalEmoji+"Do: got unexpected error: %q.", err)
 	}
@@ -103,6 +124,7 @@ func (a *Assertions) Do[V any](v V, err error) V {
 //	v1, v2 := a.Do2(returnsTwoValuesAndError())
 func (a *Assertions) Do2[V1, V2 any](v1 V1, v2 V2, err error) (V1, V2) {
 	a.t.Helper()
+	a.used.Store(true)
 	if err != nil {
 		a.t.Fatalf(fatalEmoji+"Do2: got unexpected error: %q.", err)
 	}
@@ -116,6 +138,7 @@ func (a *Assertions) Do2[V1, V2 any](v1 V1, v2 V2, err error) (V1, V2) {
 //	a.No(err)
 func (a *Assertions) No(err error) {
 	a.t.Helper()
+	a.used.Store(true)
 	if err != nil {
 		a.t.Fatalf(fatalEmoji+"No: got unexpected error: %q.", err)
 	}
@@ -132,6 +155,7 @@ func (a *Assertions) No(err error) {
 //	a.Is(want, got, t)
 func (a *Assertions) Is[T any](want, got T, opts ...cmp.Option) {
 	a.t.Helper()
+	a.used.Store(true)
 	opts = append(opts, cmpopts.EquateErrors())
 	diff := cmp.Diff(want, got, opts...)
 	if diff == "" {
@@ -143,6 +167,7 @@ func (a *Assertions) Is[T any](want, got T, opts ...cmp.Option) {
 // IsSubString is a specialized version of Is to check that want is a substring of got.
 func (a *Assertions) IsSubString(want, got string) {
 	a.t.Helper()
+	a.used.Store(true)
 	if strings.Contains(got, want) {
 		return
 	}
@@ -159,6 +184,7 @@ func (a *Assertions) IsSubString(want, got string) {
 //	a.Err("permission denied", err)
 func (a *Assertions) Err(errorSubMessage string, err error) {
 	a.t.Helper()
+	a.used.Store(true)
 	if err == nil {
 		a.t.Fatalf(fatalEmoji+"Err: expected error, got %v", err)
 		return

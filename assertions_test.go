@@ -21,6 +21,7 @@ type call struct {
 type stubTest struct {
 	helperCalled int
 	calls        []call
+	parall       bool
 	clean        []func()
 }
 
@@ -47,6 +48,10 @@ func (t *stubTest) Helper() {
 	t.helperCalled++
 }
 
+func (t *stubTest) Parallel() {
+	t.parall = true
+}
+
 func (t *stubTest) Fatalf(f string, args ...any) {
 	t.calls = append(t.calls, call{fatal, fmt.Sprintf(f, args...)})
 }
@@ -61,6 +66,12 @@ func (t *stubTest) Failed() bool {
 
 func (t *stubTest) Cleanup(f func()) {
 	t.clean = append(t.clean, f)
+}
+
+func (t *stubTest) RunCleanup() {
+	for _, f := range t.clean {
+		f()
+	}
 }
 
 func (t *stubTest) pop() call {
@@ -252,6 +263,34 @@ func TestKo(t *testing.T) {
 		want := call{fatal, "⛔ Ko: Test aborted due to previous failures."}
 		if got != want {
 			t.Errorf("call[1]:\nwant\n%#v\ngot\n%#v", got, want)
+		}
+	})
+}
+
+func TestUsed(t *testing.T) {
+	t.Run("Go", func(t *testing.T) {
+		st := newStub(t)
+		a := tst.Go(st)
+		a.Ko()
+		st.RunCleanup()
+		got := st.pop()
+		want := call{fatal, "❌ Assertion was created but not used."}
+		if got != want {
+			t.Errorf("call[0]:\nwant\n%#v\ngot\n%#v", got, want)
+		}
+		if !st.parall {
+			t.Errorf("Want Go to call Parallel, but didn't.")
+		}
+	})
+	t.Run("Sync", func(t *testing.T) {
+		st := newStub(t)
+		a := tst.Sync(st)
+		a.Ko()
+		st.RunCleanup()
+		got := st.pop()
+		want := call{fatal, "❌ Assertion was created but not used."}
+		if got != want {
+			t.Errorf("call[0]:\nwant\n%#v\ngot\n%#v", got, want)
 		}
 	})
 }
