@@ -1,14 +1,14 @@
 # tst
 
-`tst` is a collection of small, focused helpers designed to make Go tests leaner, more readable, and easier to maintain. It provides intuitive functions for common testing patterns, reducing boilerplate and making the intent of your tests clearer.
+`tst` is a collection of small helpers designed to make Go tests more readable and easier to maintain.
+It provides functions for common testing patterns, making the intent of your tests clearer.
 
 ## Key Features
 
 - **Lean Error Handling:** Reduce `if err != nil { t.Fatalf(...) }` blocks to a single line.
 - **Value Unwrapping:** Extract values from functions that return `(value V, err error)` or `(value V, ok bool)` directly in your assertions.
-- **Deep Equality:** Built-in support for `google/go-cmp` for powerful, expressive and readable diffs.
-- **Cascading Failure Prevention:** Easily stop tests early if a critical assertion fails.
-- **Concurrency Helpers:** Shorthand for parallel tests and context management.
+- **Deep Equality:** Built-in support for `google/go-cmp` for expressive and readable diffs.
+- **Concurrency Helpers:** Shorthands for parallel tests.
 
 ## Installation
 
